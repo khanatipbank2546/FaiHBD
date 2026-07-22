@@ -88,6 +88,35 @@ function getSplitGroups(totalVertices, numPieces) {
   return groups;
 }
 
+// Helper: Subdivide a polygon boundary to have exactly targetCount vertices by splitting the longest edges
+function subdividePolygon(points, targetCount) {
+  const result = points.map(p => ({ x: p.x, y: p.y }));
+  while (result.length < targetCount) {
+    let longestEdgeIdx = 0;
+    let maxDistSq = 0;
+    for (let i = 0; i < result.length; i++) {
+      const p1 = result[i];
+      const p2 = result[(i + 1) % result.length];
+      const distSq = (p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2;
+      if (distSq > maxDistSq) {
+        maxDistSq = distSq;
+        longestEdgeIdx = i;
+      }
+    }
+    
+    // Insert midpoint
+    const p1 = result[longestEdgeIdx];
+    const p2 = result[(longestEdgeIdx + 1) % result.length];
+    const midpoint = {
+      x: (p1.x + p2.x) / 2,
+      y: (p1.y + p2.y) / 2
+    };
+    
+    result.splice(longestEdgeIdx + 1, 0, midpoint);
+  }
+  return result;
+}
+
 // Custom UV Projection function to map the global image onto extruded geometries
 export function projectGlobalUVs(geometry) {
   const posAttr = geometry.attributes.position;
@@ -110,12 +139,13 @@ export function projectGlobalUVs(geometry) {
 
 // Generate the puzzle pieces data for a specific stage (0 to 4)
 export function getStagePieces(stageIndex) {
-  const boundaryPoints = SECTOR_BOUNDS[stageIndex];
-  const centroid = calculateCentroid(boundaryPoints);
+  // We want 12 pieces for all stages to make it more complex and fun!
+  const numPieces = 12;
   
-  // Decide how many pieces for this stage
-  // Stages 1-4 get 4 pieces, Stage 5 (heart) gets 5 pieces
-  const numPieces = stageIndex === 4 ? 5 : 4;
+  const rawBoundaryPoints = SECTOR_BOUNDS[stageIndex];
+  const boundaryPoints = subdividePolygon(rawBoundaryPoints, numPieces);
+  
+  const centroid = calculateCentroid(boundaryPoints);
   const splitGroups = getSplitGroups(boundaryPoints.length, numPieces);
   
   const pieces = [];

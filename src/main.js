@@ -233,8 +233,6 @@ function startStage(stageIdx) {
   currentStageData = getStagePieces(stageIdx);
   stageTitleEl.textContent = currentStageData.title;
   
-  updateProgressBar();
-
   // Create pieces meshes
   currentStageData.pieces.forEach(pData => {
     // 3D Mesh (Cap uses piece photo material, sides use gold metallic)
@@ -285,9 +283,13 @@ function startStage(stageIdx) {
     });
   });
 
+  // Sync HUD Progress Bar
+  updateProgressBar();
+
   // Camera entrance animation (slightly zoom in/shake)
   camera.position.z = camera.targetZ + 1.2;
 }
+
 
 // Particle Burst on Successful Placement
 function spawnPlacementBurst(position) {
