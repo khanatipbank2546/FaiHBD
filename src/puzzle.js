@@ -192,13 +192,13 @@ export function getStagePieces(stageIndex) {
     const localTarget = new THREE.Vector3(pieceCentroid.x - centroid.x, pieceCentroid.y - centroid.y, 0);
     const globalTarget = new THREE.Vector3(pieceCentroid.x, pieceCentroid.y, 0);
     
-    // Scattered position: push outward from the center (0,0) in a ring-like layout
-    const angle = Math.atan2(localTarget.y, localTarget.x) || (Math.random() * Math.PI * 2);
-    const scatterDist = 1.9 + Math.random() * 0.8;
+    // Completely randomized scatter angle and distance around the center (0,0)
+    const angle = Math.random() * Math.PI * 2;
+    const scatterDist = 1.6 + Math.random() * 1.1;
     const scatterPos = new THREE.Vector3(
-      Math.cos(angle) * scatterDist + (Math.random() - 0.5) * 0.3,
-      Math.sin(angle) * scatterDist + (Math.random() - 0.5) * 0.3,
-      0.4 + Math.random() * 0.4 // Float slightly forward
+      Math.cos(angle) * scatterDist,
+      Math.sin(angle) * scatterDist,
+      0.02 // Keep flat on the board plane
     );
     
     pieces.push({
@@ -208,9 +208,9 @@ export function getStagePieces(stageIndex) {
       globalTargetPos: globalTarget,
       scatterPos: scatterPos,
       scatterRot: new THREE.Euler(
-        (Math.random() - 0.5) * 0.3,
-        (Math.random() - 0.5) * 0.3,
-        (Math.random() - 0.5) * 1.8 // Rotate around Z
+        0, // Keep flat
+        0, // Keep flat
+        Math.random() * Math.PI * 2 // Completely jumbled 360-degree rotation!
       )
     });
   });

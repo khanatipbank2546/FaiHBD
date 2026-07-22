@@ -103,19 +103,23 @@ function initEngine() {
   
   bgTexture.colorSpace = THREE.SRGBColorSpace;
 
-  // Front of pieces uses the photo but tinted gray-purple (bright enough to see details clearly)
+  // Front of pieces in scattered state uses natural colors but is semi-transparent/thin (บางๆ)
   scatteredPieceMaterial = new THREE.MeshStandardMaterial({
     map: bgTexture,
-    color: 0xa8a3b8, // Softer gray-purple tint, much brighter details
-    roughness: 0.3,
+    color: 0xffffff, // 100% natural clear colors (no dark tint)
+    transparent: true,
+    opacity: 0.55, // Translucent glass-like effect so details are clear but see-through
+    roughness: 0.25,
     metalness: 0.1,
     side: THREE.FrontSide
   });
 
-  // Front of pieces in placed/solved state (fully bright)
+  // Front of pieces in placed/solved state (fully bright, fully opaque)
   placedPieceMaterial = new THREE.MeshStandardMaterial({
     map: bgTexture,
     color: 0xffffff, // Normal colors
+    transparent: false,
+    opacity: 1.0, // Fully opaque
     roughness: 0.15,
     metalness: 0.15,
     side: THREE.FrontSide
@@ -216,8 +220,8 @@ function adjustCamera() {
     dist = (fitWidth / camera.aspect) / (2 * Math.tan((camera.fov * Math.PI) / 360));
   }
   
-  // Save target camera Z position (zoomed out by 25% for breathing room)
-  camera.targetZ = Math.max(dist * 1.25, 6.0);
+  // Save target camera Z position (zoomed out by 45% for wider breathing room)
+  camera.targetZ = Math.max(dist * 1.45, 6.8);
   if (!camera.currentZ) {
     camera.position.z = camera.targetZ;
     camera.currentZ = camera.targetZ;
@@ -629,7 +633,7 @@ function animate(timestamp) {
     if (p.status === 'scattered') {
       if (selectedPiece === p) {
         // Selection animation: floats slightly forward and rotates flat facing screen
-        const hoverZ = 0.45;
+        const hoverZ = 0.18;
         mesh.position.lerp(new THREE.Vector3(data.scatterPos.x, data.scatterPos.y, hoverZ), 0.15);
         
         // Face flat
