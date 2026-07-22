@@ -89,8 +89,8 @@ function initEngine() {
   window.selectionLight = selectionLight;
 
   // Materials
-  // Base path from Viteconfig
-  const basePath = import.meta.env.BASE_URL || '/';
+  // Base path from Viteconfig (safe for raw browser imports)
+  const basePath = (import.meta.env && import.meta.env.BASE_URL) || './';
   const textureLoader = new THREE.TextureLoader();
   bgTexture = textureLoader.load(`${basePath}fai.jpg`, () => {
     // Hide loader once image is loaded
