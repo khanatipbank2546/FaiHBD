@@ -1,0 +1,198 @@
+import * as THREE from 'three';
+
+// Define the 5 main sectors of the 4:3 image in coordinates x: [-2, 2], y: [-1.5, 1.5]
+// Sector 5 is the center heart shape. Sectors 1-4 are the corners meeting the heart.
+const HEART_POINTS = [
+  { x: 0, y: -0.65 },     // P0: bottom tip
+  { x: -0.4, y: -0.25 },   // P1
+  { x: -0.75, y: 0.15 },   // P2: left bulge
+  { x: -0.75, y: 0.55 },   // P3
+  { x: -0.45, y: 0.8 },    // P4: top-left peak
+  { x: 0, y: 0.45 },      // P5: center dip
+  { x: 0.45, y: 0.8 },     // P6: top-right peak
+  { x: 0.75, y: 0.55 },    // P7
+  { x: 0.75, y: 0.15 },    // P8: right bulge
+  { x: 0.4, y: -0.25 }     // P9
+];
+
+// Sector boundaries
+const SECTOR_BOUNDS = [
+  // Sector 1: Top-Left
+  [
+    { x: -2, y: 1.5 },
+    { x: 0, y: 1.5 },
+    HEART_POINTS[5], // P5: (0, 0.45)
+    HEART_POINTS[4], // P4: (-0.45, 0.8)
+    HEART_POINTS[3], // P3: (-0.75, 0.55)
+    HEART_POINTS[2], // P2: (-0.75, 0.15)
+    { x: -2, y: 0.15 }
+  ],
+  // Sector 2: Top-Right
+  [
+    { x: 0, y: 1.5 },
+    { x: 2, y: 1.5 },
+    { x: 2, y: 0.15 },
+    HEART_POINTS[8], // P8: (0.75, 0.15)
+    HEART_POINTS[7], // P7: (0.75, 0.55)
+    HEART_POINTS[6], // P6: (0.45, 0.8)
+    HEART_POINTS[5]  // P5: (0, 0.45)
+  ],
+  // Sector 3: Bottom-Left
+  [
+    { x: -2, y: 0.15 },
+    HEART_POINTS[2], // P2: (-0.75, 0.15)
+    HEART_POINTS[1], // P1: (-0.4, -0.25)
+    HEART_POINTS[0], // P0: (0, -0.65)
+    { x: 0, y: -1.5 },
+    { x: -2, y: -1.5 }
+  ],
+  // Sector 4: Bottom-Right
+  [
+    HEART_POINTS[8], // P8: (0.75, 0.15)
+    { x: 2, y: 0.15 },
+    { x: 2, y: -1.5 },
+    { x: 0, y: -1.5 },
+    HEART_POINTS[0], // P0: (0, -0.65)
+    HEART_POINTS[9]  // P9: (0.4, -0.25)
+  ],
+  // Sector 5: Center Heart
+  HEART_POINTS
+];
+
+// Helper: Calculate polygon centroid
+function calculateCentroid(points) {
+  let sumX = 0, sumY = 0;
+  points.forEach(p => {
+    sumX += p.x;
+    sumY += p.y;
+  });
+  return { x: sumX / points.length, y: sumY / points.length };
+}
+
+// Helper: Distribute boundary vertices into groups for K pieces
+function getSplitGroups(totalVertices, numPieces) {
+  const groups = [];
+  let currentIdx = 0;
+  const base = Math.floor(totalVertices / numPieces);
+  const extra = totalVertices % numPieces;
+  
+  for (let i = 0; i < numPieces; i++) {
+    const count = base + (i < extra ? 1 : 0);
+    const group = [];
+    for (let j = 0; j <= count; j++) {
+      group.push((currentIdx + j) % totalVertices);
+    }
+    groups.push(group);
+    currentIdx += count;
+  }
+  return groups;
+}
+
+// Custom UV Projection function to map the global image onto extruded geometries
+export function projectGlobalUVs(geometry) {
+  const posAttr = geometry.attributes.position;
+  const uvAttr = geometry.attributes.uv;
+  
+  for (let i = 0; i < posAttr.count; i++) {
+    const x = posAttr.getX(i);
+    const y = posAttr.getY(i);
+    
+    // Image boundary is x: [-2, 2] and y: [-1.5, 1.5]
+    // Normalized to u: [0, 1] and v: [0, 1]
+    const u = (x + 2) / 4;
+    const v = (y + 1.5) / 3;
+    
+    uvAttr.setXY(i, u, v);
+  }
+  
+  uvAttr.needsUpdate = true;
+}
+
+// Generate the puzzle pieces data for a specific stage (0 to 4)
+export function getStagePieces(stageIndex) {
+  const boundaryPoints = SECTOR_BOUNDS[stageIndex];
+  const centroid = calculateCentroid(boundaryPoints);
+  
+  // Decide how many pieces for this stage
+  // Stages 1-4 get 4 pieces, Stage 5 (heart) gets 5 pieces
+  const numPieces = stageIndex === 4 ? 5 : 4;
+  const splitGroups = getSplitGroups(boundaryPoints.length, numPieces);
+  
+  const pieces = [];
+  
+  splitGroups.forEach((group, index) => {
+    // Generate piece vertices
+    const pieceVertices = [];
+    pieceVertices.push(centroid);
+    group.forEach(vertexIdx => {
+      pieceVertices.push(boundaryPoints[vertexIdx]);
+    });
+    pieceVertices.push(centroid); // Close the piece path back at centroid
+    
+    // Create Three.js Shape
+    const shape = new THREE.Shape();
+    shape.moveTo(pieceVertices[0].x, pieceVertices[0].y);
+    for (let i = 1; i < pieceVertices.length; i++) {
+      shape.lineTo(pieceVertices[i].x, pieceVertices[i].y);
+    }
+    
+    // Calculate centroid of the piece itself for positioning/explosions
+    const pieceCentroid = calculateCentroid(pieceVertices.slice(1, pieceVertices.length - 1));
+    
+    // Extrude settings for 3D depth
+    const extrudeSettings = {
+      depth: 0.1,
+      bevelEnabled: true,
+      bevelThickness: 0.015,
+      bevelSize: 0.01,
+      bevelSegments: 3,
+      curveSegments: 12,
+      steps: 1
+    };
+    
+    const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    
+    // Center the geometry origin to the piece's centroid
+    // This allows pieces to rotate around their own local centers rather than the scene origin!
+    geometry.translate(-pieceCentroid.x, -pieceCentroid.y, 0);
+    
+    // Project the global UV coords
+    projectGlobalUVs(geometry);
+    
+    pieces.push({
+      id: `${stageIndex}_${index}`,
+      geometry,
+      targetPos: new THREE.Vector3(pieceCentroid.x, pieceCentroid.y, 0),
+      // Scattered starting position for gameplay (randomly offset outward + rotated)
+      scatterPos: new THREE.Vector3(
+        pieceCentroid.x + (Math.random() - 0.5) * 1.5 + (pieceCentroid.x > 0 ? 1.2 : -1.2),
+        pieceCentroid.y + (Math.random() - 0.5) * 1.5 + (pieceCentroid.y > 0 ? 0.8 : -0.8),
+        0.5 + Math.random() * 0.5 // Float slightly forward
+      ),
+      scatterRot: new THREE.Euler(
+        (Math.random() - 0.5) * 0.4,
+        (Math.random() - 0.5) * 0.4,
+        (Math.random() - 0.5) * 1.5 // Rotate around Z
+      )
+    });
+  });
+  
+  return {
+    pieces,
+    centroid,
+    title: [
+      "เสี้ยวความทรงจำที่ 1: ฝั่งซ้ายบน",
+      "เสี้ยวความทรงจำที่ 2: ฝั่งขวาบน",
+      "เสี้ยวความทรงจำที่ 3: ฝั่งซ้ายล่าง",
+      "เสี้ยวความทรงจำที่ 4: ฝั่งขวาล่าง",
+      "หัวใจแห่งความทรงจำ: ตรงกลาง"
+    ][stageIndex],
+    message: [
+      "เสี้ยวความทรงจำที่ 1 สำเร็จแล้ว! ภาพเริ่มเป็นรูปเป็นร่างขึ้น...",
+      "เสี้ยวความทรงจำที่ 2 สำเร็จแล้ว! ใกล้ความจริงเข้ามาทุกที...",
+      "เสี้ยวความทรงจำที่ 3 สำเร็จแล้ว! ชิ้นส่วนที่ขาดหายเริ่มกลับมาครบถ้วน...",
+      "เสี้ยวความทรงจำที่ 4 สำเร็จแล้ว! ต่อไปคือด่านสุดท้ายที่สำคัญที่สุด...",
+      "ความทรงจำทั้งหมดประกอบเข้าด้วยกันอย่างสมบูรณ์แบบแล้ว! ✨"
+    ][stageIndex]
+  };
+}
