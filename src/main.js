@@ -21,6 +21,10 @@ let starfieldPoints;
 let activeParticles = [];
 let fireworkExplosions = [];
 
+// Cinematic Cutscene celebration variables
+let isCelebrationCutscene = false;
+let celebrationStartTime = 0;
+
 // UI Elements
 const loadingOverlay = document.getElementById('loading-overlay');
 const welcomeScreen = document.getElementById('welcome-screen');
@@ -582,16 +586,50 @@ function completeStage() {
     });
     currentPieces = [];
 
-    stageClearMessageEl.textContent = currentStageData.message;
-    hud.classList.add('hidden');
-    stageClearOverlay.classList.remove('hidden');
-    setTimeout(() => {
-      stageClearOverlay.classList.add('active');
-    }, 50);
+    // If it is the final stage, start the celebratory camera showcase instead of the standard clear overlay
+    if (currentStage === 4) {
+      startFinalShowcase();
+    } else {
+      stageClearMessageEl.textContent = currentStageData.message;
+      hud.classList.add('hidden');
+      stageClearOverlay.classList.remove('hidden');
+      setTimeout(() => {
+        stageClearOverlay.classList.add('active');
+      }, 50);
+    }
   }, 1400);
 
   // Zoom camera out slightly
   camera.targetZ = 5.2;
+}
+
+// 10-second cinematic orbiting camera showcase of the completed puzzle
+function startFinalShowcase() {
+  isCelebrationCutscene = true;
+  celebrationStartTime = performance.now();
+  
+  hud.classList.add('hidden');
+  if (previewThumbnail) previewThumbnail.classList.remove('active');
+  
+  // Spawn celebratory fireworks and sound effects during showcase
+  const intervalId = setInterval(() => {
+    if (!isCelebrationCutscene) {
+      clearInterval(intervalId);
+      return;
+    }
+    audio.playSuccess();
+    const randX = (Math.random() - 0.5) * 3.5;
+    const randY = (Math.random() - 0.5) * 2.5;
+    spawnPlacementBurst(new THREE.Vector3(randX, randY, 0.05));
+    spawnFirework();
+  }, 1200);
+
+  // Transition to the final overlay after 10 seconds (10000ms)
+  setTimeout(() => {
+    isCelebrationCutscene = false;
+    clearInterval(intervalId);
+    triggerFinalCelebration();
+  }, 10000);
 }
 
 // Final Game Clear Celebrations
@@ -625,16 +663,26 @@ function animate(timestamp) {
 
   const time = timestamp * 0.001 || 0;
 
-  // 1. Slow Camera Parallax with mouse movement
-  const targetCamX = mouse.x * 0.5;
-  const targetCamY = mouse.y * 0.3;
-  camera.position.x += (targetCamX - camera.position.x) * 0.05;
-  camera.position.y += (targetCamY - camera.position.y) * 0.05;
+  // 1. Camera Movement (Cinematic showcase orbit or manual mouse parallax)
+  if (isCelebrationCutscene) {
+    const elapsed = (performance.now() - celebrationStartTime) * 0.001;
+    const radius = 5.2 + Math.sin(elapsed * 0.5) * 0.8; // Smooth zoom in and out
+    const angle = elapsed * 0.45; // Orbit rotation speed
+    camera.position.x = Math.sin(angle) * 1.5;
+    camera.position.y = Math.cos(angle * 1.2) * 0.4;
+    camera.position.z = radius;
+    camera.lookAt(0, 0, 0); // Focus directly on the center of the completed board
+  } else {
+    const targetCamX = mouse.x * 0.5;
+    const targetCamY = mouse.y * 0.3;
+    camera.position.x += (targetCamX - camera.position.x) * 0.05;
+    camera.position.y += (targetCamY - camera.position.y) * 0.05;
 
-  // Smoothly interpolate Camera Zoom
-  if (camera.targetZ) {
-    camera.currentZ += (camera.targetZ - camera.currentZ) * 0.05;
-    camera.position.z = camera.currentZ;
+    // Smoothly interpolate Camera Zoom
+    if (camera.targetZ) {
+      camera.currentZ += (camera.targetZ - camera.currentZ) * 0.05;
+      camera.position.z = camera.currentZ;
+    }
   }
 
   // 2. Slow rotate background stars

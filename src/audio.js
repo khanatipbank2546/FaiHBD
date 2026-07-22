@@ -52,6 +52,8 @@ class AudioManager {
     this.nextNoteTime = 0;
     this.nextChordTime = 0;
     this.schedulerTimerId = null;
+    this.audioElement = null;
+    this.bgmSource = null;
   }
 
   // Initialize the audio context (must be called after user interaction)
@@ -74,6 +76,20 @@ class AudioManager {
     this.sfxGain = this.ctx.createGain();
     this.sfxGain.gain.setValueAtTime(0.8, this.ctx.currentTime);
     this.sfxGain.connect(this.masterGain);
+
+    // Initialize custom lofi MP4 BGM streaming
+    if (!this.audioElement) {
+      const basePath = (import.meta.env && import.meta.env.BASE_URL) || './';
+      this.audioElement = new Audio(`${basePath}bgm.mp4`);
+      this.audioElement.loop = true;
+      
+      try {
+        this.bgmSource = this.ctx.createMediaElementSource(this.audioElement);
+        this.bgmSource.connect(this.bgmGain);
+      } catch (e) {
+        console.warn("MediaElementSource failed to create:", e);
+      }
+    }
   }
 
   // Start playing BGM
@@ -85,20 +101,16 @@ class AudioManager {
     if (this.bgmPlaying) return;
 
     this.bgmPlaying = true;
-    this.nextNoteTime = this.ctx.currentTime + 0.1;
-    this.nextChordTime = this.ctx.currentTime + 0.1;
-    this.currentNoteIndex = 0;
-    this.currentChordIndex = 0;
-
-    this.schedulerLoop();
+    if (this.audioElement) {
+      this.audioElement.play().catch(err => console.log("BGM play failed:", err));
+    }
   }
 
   // Stop BGM
   stopBGM() {
     this.bgmPlaying = false;
-    if (this.schedulerTimerId) {
-      clearTimeout(this.schedulerTimerId);
-      this.schedulerTimerId = null;
+    if (this.audioElement) {
+      this.audioElement.pause();
     }
   }
 
@@ -110,37 +122,7 @@ class AudioManager {
 
   // The scheduler loop to schedule notes in advance (standard Web Audio pattern)
   schedulerLoop() {
-    if (!this.bgmPlaying) return;
-
-    const scheduleAheadTime = 0.2; // How far ahead to schedule audio (seconds)
-    const currentTime = this.ctx.currentTime;
-
-    // Schedule Melody
-    while (this.nextNoteTime < currentTime + scheduleAheadTime) {
-      const [midi, durationBeats] = this.melody[this.currentNoteIndex];
-      const durationSeconds = durationBeats * this.beatDuration;
-
-      if (midi > 0) {
-        this.playMelodyNote(midi, this.nextNoteTime, durationSeconds);
-      }
-
-      this.nextNoteTime += durationSeconds;
-      this.currentNoteIndex = (this.currentNoteIndex + 1) % this.melody.length;
-    }
-
-    // Schedule Chords (one chord every 3 beats, i.e., 1 bar of waltz)
-    while (this.nextChordTime < currentTime + scheduleAheadTime) {
-      const [notes] = this.chords[this.currentChordIndex];
-      const durationSeconds = 3 * this.beatDuration; // 3 beats per bar
-
-      this.playChord(notes, this.nextChordTime, durationSeconds);
-
-      this.nextChordTime += durationSeconds;
-      this.currentChordIndex = (this.currentChordIndex + 1) % this.chords.length;
-    }
-
-    // Call scheduler again in 50ms
-    this.schedulerTimerId = setTimeout(() => this.schedulerLoop(), 50);
+    // Left empty since we use streaming Audio element BGM
   }
 
   // Synthesize a single melody note (Celesta/Music Box tone)
