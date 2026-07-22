@@ -224,8 +224,8 @@ function adjustCamera() {
     dist = (fitWidth / camera.aspect) / (2 * Math.tan((camera.fov * Math.PI) / 360));
   }
   
-  // Save target camera Z position (zoomed out by 55% for wider breathing room)
-  camera.targetZ = Math.max(dist * 1.55, 7.4);
+  // Save target camera Z position (zoomed in to make board outline large and clear)
+  camera.targetZ = Math.max(dist * 1.15, 5.4);
   if (!camera.currentZ) {
     camera.position.z = camera.targetZ;
     camera.currentZ = camera.targetZ;

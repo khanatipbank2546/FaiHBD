@@ -153,13 +153,13 @@ export function getStagePieces(stageIndex) {
   const splitGroups = getSplitGroups(boundaryPoints.length, numPieces);
   
   // Define 16 non-overlapping grid slots (8 left gutter, 8 right gutter)
-  // Spread out further to ensure pieces never touch or overlap the center board boundary
+  // Positioned slightly inward to support a larger zoomed-in board in the center
   const slots = [
-    { x: -3.1, y: -1.1 }, { x: -3.1, y: -0.36 }, { x: -3.1, y: 0.36 }, { x: -3.1, y: 1.1 },
-    { x: -2.3, y: -1.1 }, { x: -2.3, y: -0.36 }, { x: -2.3, y: 0.36 }, { x: -2.3, y: 1.1 },
+    { x: -2.5, y: -1.0 }, { x: -2.5, y: -0.33 }, { x: -2.5, y: 0.33 }, { x: -2.5, y: 1.0 },
+    { x: -1.75, y: -1.0 }, { x: -1.75, y: -0.33 }, { x: -1.75, y: 0.33 }, { x: -1.75, y: 1.0 },
     
-    { x: 2.3, y: -1.1 }, { x: 2.3, y: -0.36 }, { x: 2.3, y: 0.36 }, { x: 2.3, y: 1.1 },
-    { x: 3.1, y: -1.1 }, { x: 3.1, y: -0.36 }, { x: 3.1, y: 0.36 }, { x: 3.1, y: 1.1 }
+    { x: 1.75, y: -1.0 }, { x: 1.75, y: -0.33 }, { x: 1.75, y: 0.33 }, { x: 1.75, y: 1.0 },
+    { x: 2.5, y: -1.0 }, { x: 2.5, y: -0.33 }, { x: 2.5, y: 0.33 }, { x: 2.5, y: 1.0 }
   ];
 
   // Shuffle the slots to randomize which pieces end up where
