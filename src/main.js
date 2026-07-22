@@ -43,6 +43,7 @@ const soundOffIcon = document.getElementById('sound-off-icon');
 const previewBtn = document.getElementById('preview-btn');
 const imagePreviewModal = document.getElementById('image-preview-modal');
 const closePreviewBtn = document.getElementById('close-preview-btn');
+const previewThumbnail = document.getElementById('preview-thumbnail');
 
 // Raycasting & Mouse
 const raycaster = new THREE.Raycaster();
@@ -250,6 +251,7 @@ function startStage(stageIdx) {
   // Hide background board and completed pieces during active gameplay to avoid overlaps
   if (backgroundBoard) backgroundBoard.visible = false;
   masterCompletedPieces.forEach(mesh => mesh.visible = false);
+  if (previewThumbnail) previewThumbnail.classList.add('active');
 
   // Retrieve puzzle pieces coordinate details
   currentStageData = getStagePieces(stageIdx);
@@ -284,7 +286,7 @@ function startStage(stageIdx) {
       depthWrite: false
     });
     const silhouette = new THREE.Mesh(silGeom, silMat);
-    silhouette.position.copy(pData.localTargetPos);
+    silhouette.position.set(pData.localTargetPos.x, pData.localTargetPos.y, 0.002); // Offset slightly forward to prevent z-fighting
     silhouette.userData = { pieceId: pData.id, type: 'silhouette' };
     scene.add(silhouette);
 
@@ -297,7 +299,7 @@ function startStage(stageIdx) {
       transparent: true,
       opacity: 0.28
     }));
-    wireframe.position.copy(pData.localTargetPos);
+    wireframe.position.set(pData.localTargetPos.x, pData.localTargetPos.y, 0.005); // Offset wireframe in front of silhouette
     scene.add(wireframe);
 
     currentPieces.push({
@@ -552,6 +554,8 @@ function updateProgressBar() {
 function completeStage() {
   audio.playStageClear();
 
+  if (previewThumbnail) previewThumbnail.classList.remove('active');
+
   // Show completed stages and background board for the transition animation
   if (backgroundBoard) backgroundBoard.visible = true;
   masterCompletedPieces.forEach(mesh => {
@@ -697,8 +701,9 @@ function animate(timestamp) {
         }
       }
     } else if (p.status === 'placed') {
-      // Locking transition: fly into local target
-      mesh.position.lerp(data.localTargetPos, 0.18);
+      // Locking transition: fly into local target flat on plane
+      const targetFlatPos = new THREE.Vector3(data.localTargetPos.x, data.localTargetPos.y, 0.01);
+      mesh.position.lerp(targetFlatPos, 0.18);
       mesh.rotation.x += (0 - mesh.rotation.x) * 0.18;
       mesh.rotation.y += (0 - mesh.rotation.y) * 0.18;
       mesh.rotation.z += (0 - mesh.rotation.z) * 0.18;
@@ -706,9 +711,9 @@ function animate(timestamp) {
       // Interpolate scale to full size when placed
       mesh.scale.lerp(new THREE.Vector3(1.0, 1.0, 1.0), 0.18);
 
-      // Lock texture perfectly at z=0 when close enough
-      if (mesh.position.distanceTo(data.localTargetPos) < 0.005) {
-        mesh.position.copy(data.localTargetPos);
+      // Lock texture perfectly flat at z=0.01 when close enough
+      if (mesh.position.distanceTo(targetFlatPos) < 0.008) {
+        mesh.position.copy(targetFlatPos);
         mesh.rotation.set(0, 0, 0);
         mesh.scale.set(1.0, 1.0, 1.0);
         mesh.castShadow = false;
@@ -834,6 +839,17 @@ function registerEvents() {
         }, 300);
         audio.playClick();
       }
+    });
+  }
+
+  // Preview Thumbnail click toggle
+  if (previewThumbnail) {
+    previewThumbnail.addEventListener('click', () => {
+      imagePreviewModal.classList.remove('hidden');
+      setTimeout(() => {
+        imagePreviewModal.classList.add('active');
+      }, 50);
+      audio.playClick();
     });
   }
 }
