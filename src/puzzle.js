@@ -118,18 +118,22 @@ function subdividePolygon(points, targetCount) {
 }
 
 // Custom UV Projection function to map the global image onto extruded geometries
-export function projectGlobalUVs(geometry) {
+export function projectGlobalUVs(geometry, offset = { x: 0, y: 0 }) {
   const posAttr = geometry.attributes.position;
   const uvAttr = geometry.attributes.uv;
   
   for (let i = 0; i < posAttr.count; i++) {
-    const x = posAttr.getX(i);
-    const y = posAttr.getY(i);
+    const x_local = posAttr.getX(i);
+    const y_local = posAttr.getY(i);
+    
+    // Restore the original global coordinate of the vertex to calculate global UV
+    const x_global = x_local + offset.x;
+    const y_global = y_local + offset.y;
     
     // Image boundary is x: [-2, 2] and y: [-1.5, 1.5]
     // Normalized to u: [0, 1] and v: [0, 1]
-    const u = (x + 2) / 4;
-    const v = (y + 1.5) / 3;
+    const u = (x_global + 2) / 4;
+    const v = (y_global + 1.5) / 3;
     
     uvAttr.setXY(i, u, v);
   }
@@ -186,20 +190,20 @@ export function getStagePieces(stageIndex) {
     // This allows pieces to rotate around their own local centers rather than the scene origin!
     geometry.translate(-pieceCentroid.x, -pieceCentroid.y, 0);
     
-    // Project the global UV coords
-    projectGlobalUVs(geometry);
+    // Project the global UV coords with translation offset
+    projectGlobalUVs(geometry, pieceCentroid);
     
     const localTarget = new THREE.Vector3(pieceCentroid.x - centroid.x, pieceCentroid.y - centroid.y, 0);
     const globalTarget = new THREE.Vector3(pieceCentroid.x, pieceCentroid.y, 0);
     
-    // Completely randomized scatter angle and distance around the center (0,0)
-    const angle = Math.random() * Math.PI * 2;
-    const scatterDist = 1.6 + Math.random() * 1.1;
-    const scatterPos = new THREE.Vector3(
-      Math.cos(angle) * scatterDist,
-      Math.sin(angle) * scatterDist,
-      0.02 // Keep flat on the board plane
-    );
+    // Scatter pieces into Left and Right gutters to keep center board clear
+    const isRightSide = Math.random() > 0.5;
+    const scatterX = isRightSide 
+      ? 1.35 + Math.random() * 1.25 // Right gutter
+      : -1.35 - Math.random() * 1.25; // Left gutter
+    const scatterY = (Math.random() - 0.5) * 2.3; // Range [-1.15, 1.15], keeps pieces fully on screen
+    
+    const scatterPos = new THREE.Vector3(scatterX, scatterY, 0.02);
     
     pieces.push({
       id: `${stageIndex}_${index}`,
