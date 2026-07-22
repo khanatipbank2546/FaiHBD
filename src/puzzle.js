@@ -189,20 +189,28 @@ export function getStagePieces(stageIndex) {
     // Project the global UV coords
     projectGlobalUVs(geometry);
     
+    const localTarget = new THREE.Vector3(pieceCentroid.x - centroid.x, pieceCentroid.y - centroid.y, 0);
+    const globalTarget = new THREE.Vector3(pieceCentroid.x, pieceCentroid.y, 0);
+    
+    // Scattered position: push outward from the center (0,0) in a ring-like layout
+    const angle = Math.atan2(localTarget.y, localTarget.x) || (Math.random() * Math.PI * 2);
+    const scatterDist = 1.9 + Math.random() * 0.8;
+    const scatterPos = new THREE.Vector3(
+      Math.cos(angle) * scatterDist + (Math.random() - 0.5) * 0.3,
+      Math.sin(angle) * scatterDist + (Math.random() - 0.5) * 0.3,
+      0.4 + Math.random() * 0.4 // Float slightly forward
+    );
+    
     pieces.push({
       id: `${stageIndex}_${index}`,
       geometry,
-      targetPos: new THREE.Vector3(pieceCentroid.x, pieceCentroid.y, 0),
-      // Scattered starting position for gameplay (randomly offset outward + rotated)
-      scatterPos: new THREE.Vector3(
-        pieceCentroid.x + (Math.random() - 0.5) * 1.5 + (pieceCentroid.x > 0 ? 1.2 : -1.2),
-        pieceCentroid.y + (Math.random() - 0.5) * 1.5 + (pieceCentroid.y > 0 ? 0.8 : -0.8),
-        0.5 + Math.random() * 0.5 // Float slightly forward
-      ),
+      localTargetPos: localTarget,
+      globalTargetPos: globalTarget,
+      scatterPos: scatterPos,
       scatterRot: new THREE.Euler(
-        (Math.random() - 0.5) * 0.4,
-        (Math.random() - 0.5) * 0.4,
-        (Math.random() - 0.5) * 1.5 // Rotate around Z
+        (Math.random() - 0.5) * 0.3,
+        (Math.random() - 0.5) * 0.3,
+        (Math.random() - 0.5) * 1.8 // Rotate around Z
       )
     });
   });

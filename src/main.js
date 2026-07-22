@@ -4,7 +4,7 @@ import { audio } from './audio.js';
 
 // --- Global State ---
 let scene, camera, renderer;
-let bgTexture, pieceMaterial, goldMaterial;
+let bgTexture, scatteredPieceMaterial, placedPieceMaterial, goldMaterial;
 let backgroundBoard;
 
 let currentStage = 0; // 0 to 4
@@ -102,11 +102,21 @@ function initEngine() {
   
   bgTexture.colorSpace = THREE.SRGBColorSpace;
 
-  // Front/Back of pieces uses the photo
-  pieceMaterial = new THREE.MeshStandardMaterial({
+  // Front of pieces uses the photo but tinted dark for scattered state
+  scatteredPieceMaterial = new THREE.MeshStandardMaterial({
     map: bgTexture,
-    roughness: 0.15,
+    color: 0x3d354d, // Dark purple/grey tint, makes image faint
+    roughness: 0.35,
     metalness: 0.1,
+    side: THREE.FrontSide
+  });
+
+  // Front of pieces in placed/solved state (fully bright)
+  placedPieceMaterial = new THREE.MeshStandardMaterial({
+    map: bgTexture,
+    color: 0xffffff, // Normal colors
+    roughness: 0.15,
+    metalness: 0.15,
     side: THREE.FrontSide
   });
 
@@ -235,8 +245,8 @@ function startStage(stageIdx) {
   
   // Create pieces meshes
   currentStageData.pieces.forEach(pData => {
-    // 3D Mesh (Cap uses piece photo material, sides use gold metallic)
-    const materials = [pieceMaterial, goldMaterial];
+    // 3D Mesh (Cap uses dark scattered material, sides use gold metallic)
+    const materials = [scatteredPieceMaterial, goldMaterial];
     const mesh = new THREE.Mesh(pData.geometry, materials);
     
     // Set to scattered starting positions
@@ -257,7 +267,7 @@ function startStage(stageIdx) {
       depthWrite: false
     });
     const silhouette = new THREE.Mesh(pData.geometry, silMat);
-    silhouette.position.copy(pData.targetPos);
+    silhouette.position.copy(pData.localTargetPos);
     silhouette.userData = { pieceId: pData.id, type: 'silhouette' };
     scene.add(silhouette);
 
@@ -270,7 +280,7 @@ function startStage(stageIdx) {
       depthWrite: false
     });
     const wireframe = new THREE.Mesh(pData.geometry, wireMat);
-    wireframe.position.copy(pData.targetPos);
+    wireframe.position.copy(pData.localTargetPos);
     scene.add(wireframe);
 
     currentPieces.push({
@@ -472,8 +482,11 @@ function onPointerDown(event) {
         p.status = 'placed';
         placedCount++;
 
+        // Swap material to full color!
+        p.mesh.material = [placedPieceMaterial, goldMaterial];
+
         // Add selection glow point light position
-        window.selectionLight.position.copy(p.data.targetPos);
+        window.selectionLight.position.copy(p.data.localTargetPos);
         window.selectionLight.intensity = 8.0;
         setTimeout(() => {
           window.selectionLight.intensity = 0;
@@ -481,7 +494,7 @@ function onPointerDown(event) {
 
         // Success sound & particles
         audio.playSuccess();
-        spawnPlacementBurst(p.data.targetPos);
+        spawnPlacementBurst(p.data.localTargetPos);
 
         // Deselect
         selectedPiece = null;
@@ -516,27 +529,33 @@ function updateProgressBar() {
 function completeStage() {
   audio.playStageClear();
 
-  // Store completed pieces in the master list
+  // Move active pieces to transitioning state (they will glide to their global targets)
   currentPieces.forEach(p => {
-    p.mesh.position.copy(p.data.targetPos);
-    p.mesh.rotation.set(0, 0, 0);
-    p.mesh.castShadow = false; // Disable dynamic shadows to optimize completed layers
-    masterCompletedPieces.push(p.mesh);
+    p.status = 'transitioning';
     scene.remove(p.silhouette);
     scene.remove(p.wireframe);
   });
   
-  currentPieces = [];
-
-  // Show overlay
-  stageClearMessageEl.textContent = currentStageData.message;
-  hud.classList.add('hidden');
-  stageClearOverlay.classList.remove('hidden');
+  // Show overlay after letting the sliding animation play out (1.4 seconds)
   setTimeout(() => {
-    stageClearOverlay.classList.add('active');
-  }, 50);
+    currentPieces.forEach(p => {
+      p.status = 'completed';
+      p.mesh.position.copy(p.data.globalTargetPos);
+      p.mesh.rotation.set(0, 0, 0);
+      p.mesh.castShadow = false; // Disable dynamic shadows for performance
+      masterCompletedPieces.push(p.mesh);
+    });
+    currentPieces = [];
 
-  // Zoom camera out slightly and focus center of sector
+    stageClearMessageEl.textContent = currentStageData.message;
+    hud.classList.add('hidden');
+    stageClearOverlay.classList.remove('hidden');
+    setTimeout(() => {
+      stageClearOverlay.classList.add('active');
+    }, 50);
+  }, 1400);
+
+  // Zoom camera out slightly
   camera.targetZ = 5.2;
 }
 
@@ -643,19 +662,24 @@ function animate(timestamp) {
         }
       }
     } else if (p.status === 'placed') {
-      // Locking transition: fly into the board target coordinates
-      mesh.position.lerp(data.targetPos, 0.18);
+      // Locking transition: fly into local target
+      mesh.position.lerp(data.localTargetPos, 0.18);
       mesh.rotation.x += (0 - mesh.rotation.x) * 0.18;
       mesh.rotation.y += (0 - mesh.rotation.y) * 0.18;
       mesh.rotation.z += (0 - mesh.rotation.z) * 0.18;
 
       // Lock texture perfectly at z=0 when close enough
-      if (mesh.position.distanceTo(data.targetPos) < 0.005) {
-        mesh.position.copy(data.targetPos);
+      if (mesh.position.distanceTo(data.localTargetPos) < 0.005) {
+        mesh.position.copy(data.localTargetPos);
         mesh.rotation.set(0, 0, 0);
-        // Clear shadow calculation since it is flat on board
         mesh.castShadow = false;
       }
+    } else if (p.status === 'transitioning') {
+      // Sliding from local (centered) to global target position on the main board!
+      mesh.position.lerp(data.globalTargetPos, 0.09); // Smooth glide animation
+      mesh.rotation.x += (0 - mesh.rotation.x) * 0.09;
+      mesh.rotation.y += (0 - mesh.rotation.y) * 0.09;
+      mesh.rotation.z += (0 - mesh.rotation.z) * 0.09;
     }
   });
 
