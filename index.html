@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Happy Birthday Fai! 🎂✨</title>
+  <!-- Google Fonts for premium typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,600;0,800;1,600&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/FaiHBD/assets/index-D26ypQJa.js"></script>
+  <link rel="stylesheet" crossorigin href="/FaiHBD/assets/index-C3WAuRHk.css">
+</head>
+<body>
+  <!-- Three.js Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- Ambient Light Particle Canvas for 2D background glow effects -->
+  <div id="glow-container"></div>
+
+  <!-- Loading Screen -->
+  <div id="loading-overlay" class="overlay">
+    <div class="glass-card loading-card">
+      <div class="spinner"></div>
+      <h2>กำลังโหลดความทรงจำ...</h2>
+      <p>เตรียมพบกับของขวัญชิ้นพิเศษ</p>
+    </div>
+  </div>
+
+  <!-- Welcome Screen -->
+  <div id="welcome-screen" class="overlay active">
+    <div class="glass-card welcome-card">
+      <div class="card-glow-edge"></div>
+      <span class="subtitle">A SPECIAL GIFT FOR YOU</span>
+      <h1 class="title">Happy Birthday<br><span class="highlight">Fai</span></h1>
+      <p class="description">
+        ของขวัญชิ้นพิเศษที่เตรียมไว้ให้ฝ้าย...<br>
+        ช่วยต่อชิ้นส่วนความทรงจำทั้ง 5 ชิ้นนี้ให้สมบูรณ์นะ ✨
+      </p>
+      <button id="start-btn" class="btn primary-btn pulse-glow">
+        <span>เริ่มต้นการเดินทาง</span>
+        <svg viewBox="0 0 24 24" width="24" height="24">
+          <path fill="currentColor" d="M8 5v14l11-7z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Gameplay HUD -->
+  <div id="hud" class="hud-container hidden">
+    <!-- Top Progress Bar and Level Title -->
+    <div class="hud-header">
+      <div class="stage-info">
+        <span class="stage-indicator">STAGE <span id="current-stage-num">1</span> / 5</span>
+        <h2 id="stage-title">เสี้ยวความทรงจำที่ 1: มุมซ้ายบน</h2>
+      </div>
+      
+      <div class="progress-container">
+        <div class="progress-bar-bg">
+          <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        </div>
+        <span id="progress-text" class="progress-text">0/4 ชิ้น</span>
+      </div>
+
+      <div class="audio-controls">
+        <button id="mute-btn" class="hud-circle-btn" title="ปิด/เปิดเพลง">
+          <svg id="sound-on-icon" viewBox="0 0 24 24" width="22" height="22">
+            <path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+          </svg>
+          <svg id="sound-off-icon" viewBox="0 0 24 24" width="22" height="22" class="hidden">
+            <path fill="currentColor" d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.21.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Center Interactive Hint Message -->
+    <div id="game-hint" class="game-hint">
+      จิ้มชิ้นส่วนจิ๊กซอว์ด้านนอก แล้วเลือกจุดวางที่ถูกต้องบนบอร์ด
+    </div>
+  </div>
+
+  <!-- Intermediate Stage Cleared Overlay -->
+  <div id="stage-clear-overlay" class="overlay hidden">
+    <div class="glass-card success-card">
+      <div class="success-glow"></div>
+      <div class="success-icon">✨</div>
+      <h2 class="success-title">ประกอบสำเร็จ!</h2>
+      <p id="stage-clear-message" class="success-desc">เสี้ยวความทรงจำที่ 1 หลอมรวมเข้าด้วยกันแล้ว...</p>
+      <button id="next-stage-btn" class="btn success-btn pulse-glow">
+        <span>เข้าสู่ด่านต่อไป</span>
+        <svg viewBox="0 0 24 24" width="24" height="24">
+          <path fill="currentColor" d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Final Birthday Blessing Screen -->
+  <div id="final-overlay" class="overlay hidden">
+    <div class="celebration-vignette"></div>
+    <div class="glass-card final-card">
+      <div class="balloon-float">🎈</div>
+      <h1 class="final-title fade-in-up">Happy Birth day นะฝ้าย 🎂✨</h1>
+      <p class="final-wishes fade-in-up delay-1">
+        ขอให้ฝ้ายมีความสุขมากๆ ในปีนี้และทุกๆ ปีนะ<br>
+        มีรอยยิ้มที่สดใสและสุขภาพร่างกายแข็งแรงในทุกวันน้าาา 💖
+      </p>
+      
+      <!-- Premium Letter Box that unfolds or shines -->
+      <div class="envelope fade-in-up delay-2">
+        <div class="envelope-back"></div>
+        <div class="envelope-paper">
+          <p>🎁 วันเกิดปีนี้ หวังว่าเกมน่ารักๆ นี้จะทำให้ฝ้ายยิ้มได้นะ!</p>
+        </div>
+        <div class="envelope-front"></div>
+      </div>
+
+      <button id="replay-btn" class="btn primary-btn fade-in-up delay-3">
+        <span>เล่นอีกครั้ง</span>
+        <svg viewBox="0 0 24 24" width="24" height="24">
+          <path fill="currentColor" d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+</body>
+</html>
