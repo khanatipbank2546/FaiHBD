@@ -149,7 +149,15 @@ export function getStagePieces(stageIndex) {
   const rawBoundaryPoints = SECTOR_BOUNDS[stageIndex];
   const boundaryPoints = subdividePolygon(rawBoundaryPoints, numPieces);
   
-  const centroid = calculateCentroid(boundaryPoints);
+  // Use custom star-centers for each stage to prevent self-intersections/overlapping triangles in concave stages
+  const centers = [
+    { x: -1.0, y: 0.8 },      // Stage 1
+    { x: 1.38, y: 0.95 },     // Stage 2 (Shifted away from heart cleft)
+    { x: -1.0, y: -0.8 },     // Stage 3
+    { x: 1.38, y: -0.95 },    // Stage 4 (Shifted away from heart cleft)
+    { x: 0.0, y: 0.12 }       // Stage 5 (Shifted slightly down from top center dip P5)
+  ];
+  const centroid = centers[stageIndex];
   const splitGroups = getSplitGroups(boundaryPoints.length, numPieces);
   
   // Define 16 non-overlapping grid slots (8 left gutter, 8 right gutter)
