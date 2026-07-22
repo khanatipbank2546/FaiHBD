@@ -152,14 +152,14 @@ export function getStagePieces(stageIndex) {
   const centroid = calculateCentroid(boundaryPoints);
   const splitGroups = getSplitGroups(boundaryPoints.length, numPieces);
   
-  // Define 12 non-overlapping grid slots (6 left gutter, 6 right gutter)
-  // Columns: x = -2.3, -1.5 (Left Gutter) and x = 1.5, 2.3 (Right Gutter)
-  // Rows: y = -0.9, 0.0, 0.9
+  // Define 16 non-overlapping grid slots (8 left gutter, 8 right gutter)
+  // Spread out across 4 rows and 2 columns on each side to give maximum spacing
   const slots = [
-    { x: -2.35, y: -0.85 }, { x: -2.35, y: 0.0 }, { x: -2.35, y: 0.85 },
-    { x: -1.55, y: -0.85 }, { x: -1.55, y: 0.0 }, { x: -1.55, y: 0.85 },
-    { x: 1.55, y: -0.85 }, { x: 1.55, y: 0.0 }, { x: 1.55, y: 0.85 },
-    { x: 2.35, y: -0.85 }, { x: 2.35, y: 0.0 }, { x: 2.35, y: 0.85 }
+    { x: -2.6, y: -1.05 }, { x: -2.6, y: -0.35 }, { x: -2.6, y: 0.35 }, { x: -2.6, y: 1.05 },
+    { x: -1.65, y: -1.05 }, { x: -1.65, y: -0.35 }, { x: -1.65, y: 0.35 }, { x: -1.65, y: 1.05 },
+    
+    { x: 1.65, y: -1.05 }, { x: 1.65, y: -0.35 }, { x: 1.65, y: 0.35 }, { x: 1.65, y: 1.05 },
+    { x: 2.6, y: -1.05 }, { x: 2.6, y: -0.35 }, { x: 2.6, y: 0.35 }, { x: 2.6, y: 1.05 }
   ];
 
   // Shuffle the slots to randomize which pieces end up where
@@ -216,8 +216,8 @@ export function getStagePieces(stageIndex) {
     
     // Assign piece to one of the shuffled non-overlapping slots, adding a tiny jitter for natural look
     const slot = slots[index];
-    const jitterX = (Math.random() - 0.5) * 0.18;
-    const jitterY = (Math.random() - 0.5) * 0.18;
+    const jitterX = (Math.random() - 0.5) * 0.08;
+    const jitterY = (Math.random() - 0.5) * 0.08;
     const scatterPos = new THREE.Vector3(slot.x + jitterX, slot.y + jitterY, 0.02);
     
     pieces.push({

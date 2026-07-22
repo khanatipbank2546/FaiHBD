@@ -264,6 +264,7 @@ function startStage(stageIdx) {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.userData = { pieceId: pData.id, type: 'piece', data: pData };
+    mesh.scale.set(0.65, 0.65, 0.65); // Scale down scattered pieces to prevent overlaps in gutters
     scene.add(mesh);
 
     // Target Silhouette Placeholder
@@ -667,6 +668,10 @@ function animate(timestamp) {
         });
       }
 
+      // Interpolate scale for scattered pieces: grow slightly when selected
+      const targetScale = (selectedPiece === p) ? 0.8 : 0.65;
+      mesh.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.15);
+
       // Wobble / Shake error animation
       if (p.wobbleTime > 0) {
         p.wobbleTime += 0.05;
@@ -685,10 +690,14 @@ function animate(timestamp) {
       mesh.rotation.y += (0 - mesh.rotation.y) * 0.18;
       mesh.rotation.z += (0 - mesh.rotation.z) * 0.18;
 
+      // Interpolate scale to full size when placed
+      mesh.scale.lerp(new THREE.Vector3(1.0, 1.0, 1.0), 0.18);
+
       // Lock texture perfectly at z=0 when close enough
       if (mesh.position.distanceTo(data.localTargetPos) < 0.005) {
         mesh.position.copy(data.localTargetPos);
         mesh.rotation.set(0, 0, 0);
+        mesh.scale.set(1.0, 1.0, 1.0);
         mesh.castShadow = false;
       }
     } else if (p.status === 'transitioning') {
@@ -697,6 +706,7 @@ function animate(timestamp) {
       mesh.rotation.x += (0 - mesh.rotation.x) * 0.09;
       mesh.rotation.y += (0 - mesh.rotation.y) * 0.09;
       mesh.rotation.z += (0 - mesh.rotation.z) * 0.09;
+      mesh.scale.lerp(new THREE.Vector3(1.0, 1.0, 1.0), 0.09); // Ensure full scale
     }
   });
 
