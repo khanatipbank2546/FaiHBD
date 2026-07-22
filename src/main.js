@@ -272,7 +272,7 @@ function startStage(stageIdx) {
 
     // Target Silhouette Placeholder (Flat 2D ShapeGeometry)
     const silGeom = new THREE.ShapeGeometry(pData.shape);
-    const pieceCentroid = pData.data.globalTargetPos; // Center offset
+    const pieceCentroid = pData.globalTargetPos; // Center offset
     silGeom.translate(-pieceCentroid.x, -pieceCentroid.y, 0); // Center the shape
 
     const silMat = new THREE.MeshStandardMaterial({
