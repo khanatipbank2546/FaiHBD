@@ -1,18 +1,18 @@
 import * as THREE from 'three';
 
 // Define the 5 main sectors of the 4:3 image in coordinates x: [-2, 2], y: [-1.5, 1.5]
-// Sector 5 is the center heart shape. Sectors 1-4 are the corners meeting the heart.
+// Sector 5 is now a center circle (10-sided polygon with radius 0.65). Sectors 1-4 meet the circle.
 const HEART_POINTS = [
-  { x: 0, y: -0.65 },     // P0: bottom tip
-  { x: -0.4, y: -0.25 },   // P1
-  { x: -0.75, y: 0.15 },   // P2: left bulge
-  { x: -0.75, y: 0.55 },   // P3
-  { x: -0.45, y: 0.8 },    // P4: top-left peak
-  { x: 0, y: 0.45 },      // P5: center dip
-  { x: 0.45, y: 0.8 },     // P6: top-right peak
-  { x: 0.75, y: 0.55 },    // P7
-  { x: 0.75, y: 0.15 },    // P8: right bulge
-  { x: 0.4, y: -0.25 }     // P9
+  { x: 0, y: -0.65 },          // P0 (270°) - Bottom center
+  { x: -0.382, y: -0.526 },    // P1 (234°)
+  { x: -0.618, y: -0.201 },    // P2 (198°) - Left bulge
+  { x: -0.618, y: 0.201 },     // P3 (162°)
+  { x: -0.382, y: 0.526 },     // P4 (126°) - Top-left
+  { x: 0, y: 0.65 },           // P5 (90°) - Top center
+  { x: 0.382, y: 0.526 },      // P6 (54°) - Top-right
+  { x: 0.618, y: 0.201 },      // P7 (18°)
+  { x: 0.618, y: -0.201 },     // P8 (342°) - Right bulge
+  { x: 0.382, y: -0.526 }      // P9 (306°)
 ];
 
 // Sector boundaries
@@ -155,7 +155,7 @@ export function getStagePieces(stageIndex) {
     { x: 1.38, y: 0.95 },     // Stage 2 (Shifted away from heart cleft)
     { x: -1.0, y: -0.8 },     // Stage 3
     { x: 1.38, y: -0.95 },    // Stage 4 (Shifted away from heart cleft)
-    { x: 0.0, y: 0.12 }       // Stage 5 (Shifted slightly down from top center dip P5)
+    { x: 0.0, y: 0.0 }        // Stage 5 (Center Circle: exactly centered)
   ];
   const centroid = centers[stageIndex];
   const splitGroups = getSplitGroups(boundaryPoints.length, numPieces);
@@ -251,7 +251,7 @@ export function getStagePieces(stageIndex) {
       "เสี้ยวความทรงจำที่ 2: ฝั่งขวาบน",
       "เสี้ยวความทรงจำที่ 3: ฝั่งซ้ายล่าง",
       "เสี้ยวความทรงจำที่ 4: ฝั่งขวาล่าง",
-      "หัวใจแห่งความทรงจำ: ตรงกลาง"
+      "วงกลมแห่งความทรงจำ: ตรงกลาง"
     ][stageIndex],
     message: [
       "เสี้ยวความทรงจำที่ 1 สำเร็จแล้ว! ภาพเริ่มเป็นรูปเป็นร่างขึ้น...",
