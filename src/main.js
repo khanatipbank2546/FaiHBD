@@ -70,15 +70,16 @@ function initEngine() {
   container.appendChild(renderer.domElement);
 
   // Lights
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  // Lights (Brightened for better piece visibility)
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
   scene.add(ambientLight);
 
-  const dirLight1 = new THREE.DirectionalLight(0xfff5e6, 1.2);
+  const dirLight1 = new THREE.DirectionalLight(0xfff5e6, 1.4);
   dirLight1.position.set(5, 5, 4);
   dirLight1.castShadow = true;
   scene.add(dirLight1);
 
-  const dirLight2 = new THREE.DirectionalLight(0xa585ff, 0.6);
+  const dirLight2 = new THREE.DirectionalLight(0xa585ff, 0.7);
   dirLight2.position.set(-5, -3, 3);
   scene.add(dirLight2);
 
@@ -102,11 +103,11 @@ function initEngine() {
   
   bgTexture.colorSpace = THREE.SRGBColorSpace;
 
-  // Front of pieces uses the photo but tinted dark for scattered state
+  // Front of pieces uses the photo but tinted gray-purple (bright enough to see details clearly)
   scatteredPieceMaterial = new THREE.MeshStandardMaterial({
     map: bgTexture,
-    color: 0x3d354d, // Dark purple/grey tint, makes image faint
-    roughness: 0.35,
+    color: 0xa8a3b8, // Softer gray-purple tint, much brighter details
+    roughness: 0.3,
     metalness: 0.1,
     side: THREE.FrontSide
   });
@@ -120,12 +121,12 @@ function initEngine() {
     side: THREE.FrontSide
   });
 
-  // Sides/Bevels of pieces uses gold metallic
+  // Sides/Bevels of pieces uses gold metallic (emissive brightened)
   goldMaterial = new THREE.MeshStandardMaterial({
     color: 0xd4af37,
     roughness: 0.2,
     metalness: 0.85,
-    emissive: 0x2b1c05
+    emissive: 0x48320a
   });
 
   // Create Background Silhouette Board (reveals the photo dimly)
@@ -215,8 +216,8 @@ function adjustCamera() {
     dist = (fitWidth / camera.aspect) / (2 * Math.tan((camera.fov * Math.PI) / 360));
   }
   
-  // Save target camera Z position
-  camera.targetZ = Math.max(dist, 4.8);
+  // Save target camera Z position (zoomed out by 25% for breathing room)
+  camera.targetZ = Math.max(dist * 1.25, 6.0);
   if (!camera.currentZ) {
     camera.position.z = camera.targetZ;
     camera.currentZ = camera.targetZ;
@@ -238,6 +239,10 @@ function startStage(stageIdx) {
   currentPieces = [];
   selectedPiece = null;
   placedCount = 0;
+
+  // Hide background board and completed pieces during active gameplay to avoid overlaps
+  if (backgroundBoard) backgroundBoard.visible = false;
+  masterCompletedPieces.forEach(mesh => mesh.visible = false);
 
   // Retrieve puzzle pieces coordinate details
   currentStageData = getStagePieces(stageIdx);
@@ -528,6 +533,14 @@ function updateProgressBar() {
 // Stage completed cutscene trigger
 function completeStage() {
   audio.playStageClear();
+
+  // Show completed stages and background board for the transition animation
+  if (backgroundBoard) backgroundBoard.visible = true;
+  masterCompletedPieces.forEach(mesh => {
+    mesh.visible = true;
+    // Make sure completed pieces are bright/textured
+    mesh.material = [placedPieceMaterial, goldMaterial];
+  });
 
   // Move active pieces to transitioning state (they will glide to their global targets)
   currentPieces.forEach(p => {
