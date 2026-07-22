@@ -40,6 +40,9 @@ const replayBtn = document.getElementById('replay-btn');
 const muteBtn = document.getElementById('mute-btn');
 const soundOnIcon = document.getElementById('sound-on-icon');
 const soundOffIcon = document.getElementById('sound-off-icon');
+const previewBtn = document.getElementById('preview-btn');
+const imagePreviewModal = document.getElementById('image-preview-modal');
+const closePreviewBtn = document.getElementById('close-preview-btn');
 
 // Raycasting & Mouse
 const raycaster = new THREE.Raycaster();
@@ -267,29 +270,33 @@ function startStage(stageIdx) {
     mesh.scale.set(0.65, 0.65, 0.65); // Scale down scattered pieces to prevent overlaps in gutters
     scene.add(mesh);
 
-    // Target Silhouette Placeholder
+    // Target Silhouette Placeholder (Flat 2D ShapeGeometry)
+    const silGeom = new THREE.ShapeGeometry(pData.shape);
+    const pieceCentroid = pData.data.globalTargetPos; // Center offset
+    silGeom.translate(-pieceCentroid.x, -pieceCentroid.y, 0); // Center the shape
+
     const silMat = new THREE.MeshStandardMaterial({
-      color: 0x180b2d,
+      color: 0x140726,
       transparent: true,
-      opacity: 0.42,
+      opacity: 0.5,
       roughness: 0.8,
       metalness: 0.1,
       depthWrite: false
     });
-    const silhouette = new THREE.Mesh(pData.geometry, silMat);
+    const silhouette = new THREE.Mesh(silGeom, silMat);
     silhouette.position.copy(pData.localTargetPos);
     silhouette.userData = { pieceId: pData.id, type: 'silhouette' };
     scene.add(silhouette);
 
-    // Fine Gold Wireframe around Silhouette
-    const wireMat = new THREE.MeshBasicMaterial({
+    // Fine Gold Wireframe around Silhouette (Flat 2D Edge Outline)
+    const wireGeom = new THREE.ShapeGeometry(pData.shape);
+    wireGeom.translate(-pieceCentroid.x, -pieceCentroid.y, 0);
+    const edges = new THREE.EdgesGeometry(wireGeom);
+    const wireframe = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({
       color: 0xd4af37,
-      wireframe: true,
       transparent: true,
-      opacity: 0.12,
-      depthWrite: false
-    });
-    const wireframe = new THREE.Mesh(pData.geometry, wireMat);
+      opacity: 0.28
+    }));
     wireframe.position.copy(pData.localTargetPos);
     scene.add(wireframe);
 
@@ -452,14 +459,6 @@ function onPointerDown(event) {
     }
   });
 
-  // Also can click silhouettes
-  const silhouetteMeshes = [];
-  currentPieces.forEach(p => {
-    if (p.status === 'scattered') {
-      silhouetteMeshes.push(p.silhouette);
-    }
-  });
-
   // Check clicks on scattered pieces first
   const pieceIntersects = raycaster.intersectObjects(clickableMeshes);
   if (pieceIntersects.length > 0) {
@@ -478,15 +477,29 @@ function onPointerDown(event) {
     return;
   }
 
-  // If a piece is selected, check clicks on the silhouettes
+  // If a piece is selected, check if they clicked near a silhouette's target position on the board plane
   if (selectedPiece) {
-    const silIntersects = raycaster.intersectObjects(silhouetteMeshes);
-    if (silIntersects.length > 0) {
-      const clickedSil = silIntersects[0].object;
-      const clickedSilId = clickedSil.userData.pieceId;
-
-      // Check match!
-      if (selectedPiece.data.id === clickedSilId) {
+    const boardPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    const clickPoint = new THREE.Vector3();
+    raycaster.ray.intersectPlane(boardPlane, clickPoint);
+    
+    // Find the closest silhouette target position
+    let closestPiece = null;
+    let minDist = Infinity;
+    
+    currentPieces.forEach(p => {
+      if (p.status === 'scattered') {
+        const dist = clickPoint.distanceTo(p.data.localTargetPos);
+        if (dist < minDist) {
+          minDist = dist;
+          closestPiece = p;
+        }
+      }
+    });
+    
+    // If they clicked within a generous radius of a slot (e.g. 0.6 units)
+    if (closestPiece && minDist < 0.6) {
+      if (selectedPiece === closestPiece) {
         // MATCH: Snap piece to target
         const p = selectedPiece;
         p.status = 'placed';
@@ -516,7 +529,7 @@ function onPointerDown(event) {
           setTimeout(completeStage, 1000);
         }
       } else {
-        // ERROR: clicked wrong silhouette
+        // ERROR: clicked wrong slot
         selectedPiece.wobbleTime = 0.01; // Triggers shake logic in update loop
         audio.playError();
       }
@@ -793,6 +806,36 @@ function registerEvents() {
       soundOffIcon.classList.add('hidden');
     }
   });
+
+  // Preview Button Modal toggles
+  if (previewBtn && imagePreviewModal && closePreviewBtn) {
+    previewBtn.addEventListener('click', () => {
+      imagePreviewModal.classList.remove('hidden');
+      setTimeout(() => {
+        imagePreviewModal.classList.add('active');
+      }, 50);
+      audio.playClick();
+    });
+
+    closePreviewBtn.addEventListener('click', () => {
+      imagePreviewModal.classList.remove('active');
+      setTimeout(() => {
+        imagePreviewModal.classList.add('hidden');
+      }, 300);
+      audio.playClick();
+    });
+
+    // Close preview when clicking outside card
+    imagePreviewModal.addEventListener('click', (e) => {
+      if (e.target === imagePreviewModal) {
+        imagePreviewModal.classList.remove('active');
+        setTimeout(() => {
+          imagePreviewModal.classList.add('hidden');
+        }, 300);
+        audio.playClick();
+      }
+    });
+  }
 }
 
 // --- Entry Point ---

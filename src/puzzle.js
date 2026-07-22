@@ -222,6 +222,7 @@ export function getStagePieces(stageIndex) {
     
     pieces.push({
       id: `${stageIndex}_${index}`,
+      shape, // Pass raw 2D shape for flat silhouettes
       geometry,
       localTargetPos: localTarget,
       globalTargetPos: globalTarget,

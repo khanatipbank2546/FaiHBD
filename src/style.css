@@ -568,6 +568,14 @@ body, html {
   display: none !important;
 }
 
+/* Image Preview Modal specific styles */
+.preview-card {
+  max-width: 550px !important;
+  padding: 30px !important;
+  border-color: rgba(212, 175, 55, 0.3) !important;
+  animation: zoomFadeIn 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
 /* Fade-in delay list */
 .fade-in-up {
   opacity: 0;
