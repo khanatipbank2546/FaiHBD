@@ -155,11 +155,11 @@ export function getStagePieces(stageIndex) {
   // Define 16 non-overlapping grid slots (8 left gutter, 8 right gutter)
   // Spread out further to ensure pieces never touch or overlap the center board boundary
   const slots = [
-    { x: -2.85, y: -1.05 }, { x: -2.85, y: -0.35 }, { x: -2.85, y: 0.35 }, { x: -2.85, y: 1.05 },
-    { x: -2.0, y: -1.05 }, { x: -2.0, y: -0.35 }, { x: -2.0, y: 0.35 }, { x: -2.0, y: 1.05 },
+    { x: -3.1, y: -1.1 }, { x: -3.1, y: -0.36 }, { x: -3.1, y: 0.36 }, { x: -3.1, y: 1.1 },
+    { x: -2.3, y: -1.1 }, { x: -2.3, y: -0.36 }, { x: -2.3, y: 0.36 }, { x: -2.3, y: 1.1 },
     
-    { x: 2.0, y: -1.05 }, { x: 2.0, y: -0.35 }, { x: 2.0, y: 0.35 }, { x: 2.0, y: 1.05 },
-    { x: 2.85, y: -1.05 }, { x: 2.85, y: -0.35 }, { x: 2.85, y: 0.35 }, { x: 2.85, y: 1.05 }
+    { x: 2.3, y: -1.1 }, { x: 2.3, y: -0.36 }, { x: 2.3, y: 0.36 }, { x: 2.3, y: 1.1 },
+    { x: 3.1, y: -1.1 }, { x: 3.1, y: -0.36 }, { x: 3.1, y: 0.36 }, { x: 3.1, y: 1.1 }
   ];
 
   // Shuffle the slots to randomize which pieces end up where

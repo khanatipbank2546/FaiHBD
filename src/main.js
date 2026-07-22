@@ -224,8 +224,8 @@ function adjustCamera() {
     dist = (fitWidth / camera.aspect) / (2 * Math.tan((camera.fov * Math.PI) / 360));
   }
   
-  // Save target camera Z position (zoomed out by 45% for wider breathing room)
-  camera.targetZ = Math.max(dist * 1.45, 6.8);
+  // Save target camera Z position (zoomed out by 55% for wider breathing room)
+  camera.targetZ = Math.max(dist * 1.55, 7.4);
   if (!camera.currentZ) {
     camera.position.z = camera.targetZ;
     camera.currentZ = camera.targetZ;
@@ -269,7 +269,7 @@ function startStage(stageIdx) {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.userData = { pieceId: pData.id, type: 'piece', data: pData };
-    mesh.scale.set(0.65, 0.65, 0.65); // Scale down scattered pieces to prevent overlaps in gutters
+    mesh.scale.set(0.75, 0.75, 0.75); // Scale down scattered pieces to prevent overlaps in gutters (increased size)
     scene.add(mesh);
 
     // Target Silhouette Placeholder (Flat 2D ShapeGeometry)
@@ -685,8 +685,8 @@ function animate(timestamp) {
         });
       }
 
-      // Interpolate scale for scattered pieces: grow slightly when selected
-      const targetScale = (selectedPiece === p) ? 0.8 : 0.65;
+      // Interpolate scale for scattered pieces: grow slightly when selected (increased size)
+      const targetScale = (selectedPiece === p) ? 0.9 : 0.75;
       mesh.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.15);
 
       // Wobble / Shake error animation
